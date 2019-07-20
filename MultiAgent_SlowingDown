@@ -1,0 +1,103 @@
+import airsim
+import cv2
+import numpy as np
+import os
+import pprint
+import setup_path 
+import tempfile
+import time
+import math
+
+# connect to the AirSim simulator
+
+client = airsim.MultirotorClient()
+client.confirmConnection()
+client.enableApiControl(True, "Drone1")
+client.enableApiControl(True, "Drone2")
+client.armDisarm(True, "Drone1")
+client.armDisarm(True, "Drone2")
+airsim.DrivetrainType.ForwardOnly
+
+
+#                                                           T A K E O F F
+airsim.wait_key('Taking Off')
+#print("taking off") //                                 take off z_val = -1.1912
+f1 = client.takeoffAsync(vehicle_name="Drone1")
+f2 = client.takeoffAsync(vehicle_name="Drone2")
+f1.join()
+f2.join()
+
+#                                                           S T A T U S - U P D A T E
+'''
+state1 = client.getMultirotorState(vehicle_name="Drone1")
+state2 = client.getMultirotorState(vehicle_name="Drone2")
+s1 = pprint.pformat(state1)
+s2 = pprint.pformat(state2)
+print("state: %s" % s1)
+print("state: %s" % s2)
+'''
+
+#                                                       D R O N E S - M O V I N G
+
+airsim.wait_key('Moving To Position')
+move1 = (8,6,-1.1912,.5)
+f1 = client.moveToPositionAsync(move1[0], move1[1], move1[2], move1[3], vehicle_name="Drone1")
+move2 = (-8,6,-1.1912,.5)
+f2 = client.moveToPositionAsync(move2[0], move2[1], move2[2], move2[3], vehicle_name="Drone2")
+
+
+iterations = 0
+z = -3
+for i in range(500):
+    
+    pos1 = (client.getMultirotorState("Drone1").kinematics_estimated.position.x_val,
+          client.getMultirotorState("Drone1").kinematics_estimated.position.y_val,
+          client.getMultirotorState("Drone1").kinematics_estimated.position.z_val)
+
+    pos2 = (client.getMultirotorState("Drone2").kinematics_estimated.position.x_val+8,
+          client.getMultirotorState("Drone2").kinematics_estimated.position.y_val,
+          client.getMultirotorState("Drone2").kinematics_estimated.position.z_val)
+
+    distance12 = math.sqrt( ((pos2[0]-pos1[0])**2)+((pos2[1]-pos1[1])**2)+((pos2[2]-pos1[2])**2) )
+    print('This is the DISTANCE~~~~~~~~~~~~~~~~~~',distance12)
+
+    if distance12 < 5 and distance12 > 4.0000001:
+        print('In Danger Zone')
+     
+    while distance12 <= 4:
+          
+        pos1 = (client.getMultirotorState("Drone1").kinematics_estimated.position.x_val,
+          client.getMultirotorState("Drone1").kinematics_estimated.position.y_val,
+          client.getMultirotorState("Drone1").kinematics_estimated.position.z_val)
+
+        pos2 = (client.getMultirotorState("Drone2").kinematics_estimated.position.x_val+8,
+          client.getMultirotorState("Drone2").kinematics_estimated.position.y_val,
+          client.getMultirotorState("Drone2").kinematics_estimated.position.z_val)
+
+        distance12 = math.sqrt( ((pos2[0]-pos1[0])**2)+((pos2[1]-pos1[1])**2)+((pos2[2]-pos1[2])**2) )
+        print('This is the DISTANCE~~~~~~~~~~~~~~~~~~',distance12)
+        
+        #f5 = client.moveToPositionAsync(pos2[0],pos2[1],z,2,vehicle_name="Drone2")
+        f8 = client.moveByVelocityAsync(0,0,0,2,vehicle_name="Drone2")
+        f8.join()
+        #f6 = client.moveToZAsync(z,3,vehicle_name="Drone2")
+        f2 = client.moveToPositionAsync(move2[0], move2[1], move2[2], move2[3], vehicle_name="Drone2")
+        if distance12 > 4:
+            break
+        print('broke the loop')
+        #f2 = client.moveToPositionAsync(move2[0], move2[1], move2[2], move2[3], vehicle_name="Drone2")
+
+#will break the for loop in 500 iterations and land       
+#                                                               L A N D I N G
+
+global land
+airsim.wait_key('Attempting To Land')
+landed = client.getMultirotorState().landed_state
+if landed == airsim.LandedState.Landed:
+    print("landing...")
+    f3 = client.landAsync(vehicle_name="Drone1")
+    f4 = client.landAsync(vehicle_name="Drone2")
+    f3.join()
+    f4.join()
+else:
+    print("already landed...")
