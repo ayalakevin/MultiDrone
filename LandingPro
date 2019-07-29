@@ -79,6 +79,7 @@ f1.join()
 f2.join()
 f3.join()
 
+
 #                                                           S T A T U S - U P D A T E
 '''
 state1 = client.getMultirotorState(vehicle_name="Drone1")
