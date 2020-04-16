@@ -92,7 +92,7 @@ print("state: %s" % s2)
 time.sleep(3)
 
 #                                                       D R O N E S - M O V I N G
-
+#
 airsim.wait_key('Moving To Position')
 move1 = (40,0,-2,1)
 f1 = client.moveToPositionAsync(move1[0], move1[1], move1[2], move1[3], vehicle_name="Drone1")
